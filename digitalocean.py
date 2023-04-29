@@ -159,3 +159,22 @@ class DigitalOcean:
 			"image": snapshot_id,
 		})
 		return this_response
+
+	@staticmethod
+	def parse_droplet_info(droplet):
+		data = {}
+		for network in droplet['networks']['v4']:
+			if network['type']:
+				data['Public IP'] = network['ip_address']
+		return data
+
+	def print_slugs(self):
+		size_list = self.client.sizes.list()['sizes']
+
+		sizes = [
+			[size['slug'], size['vcpus'], size['memory'], size['disk'], size['price_monthly'], size['description']]
+			for size in size_list if size['available'] and self.REGION in size['regions']
+		]
+		sizes.insert(0, ['Slug', 'vCPUs', 'Mem', 'SSD', 'Mnth $', 'Desc'])
+		for size in sizes:
+			click.echo('| {:<20} | {:^5} | {:>6} | {:>4} | {:>6} | {:^22} |'.format(*size))
