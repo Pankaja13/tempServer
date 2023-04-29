@@ -19,6 +19,15 @@ def cli():
 
 
 @cli.command()
+def status():
+	droplet = do.get_temp_droplet()
+	if droplet:
+		click.echo(droplet)
+	else:
+		click.echo("Droplet not found")
+
+
+@cli.command()
 def up():
 	do.up()
 
@@ -26,6 +35,17 @@ def up():
 @cli.command()
 def down():
 	do.down()
+
+
+@cli.command()
+def trim_snapshots():
+	if click.confirm(f'Delete {len(do.get_snapshots())} snapshots?'):
+		do.trim_snapshots(0)
+
+
+@cli.command()
+def display_slugs():
+	do.print_slugs()
 
 
 if __name__ == '__main__':
