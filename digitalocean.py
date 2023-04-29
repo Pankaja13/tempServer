@@ -1,6 +1,7 @@
 import time
 from datetime import datetime
 
+import click
 from pydo import Client
 
 
@@ -115,9 +116,9 @@ class DigitalOcean:
 		action_response = self.client.actions.get(action_id)
 		return action_response['action']['status'] == "completed"
 
-	def trim_snapshots(self):
+	def trim_snapshots(self, snapshots_to_keep=3):
 		snapshots = self.get_snapshots()
-		snapshots = snapshots[3:]
+		snapshots = snapshots[snapshots_to_keep:]
 		print(f"Flushing {len(snapshots)} snapshots")
 		for snapshot in snapshots:
 			self.delete_snapshot(snapshot['id'])
@@ -129,9 +130,12 @@ class DigitalOcean:
 			latest_snapshot = self.get_snapshot()
 
 			if not latest_snapshot:
-				print("Creating droplet from scratch")
-				create_response = self.create_temp_droplet()
-				self.wait_for_action(create_response['links']['actions'][0]['id'])
+				if click.prompt(f"Snapshot not found. Create {self.DROPLET_SIZE} from scratch? (y/n)"):
+					print(f"Creating droplet from scratch: {self.DROPLET_SIZE}")
+					create_response = self.create_temp_droplet()
+					self.wait_for_action(create_response['links']['actions'][0]['id'])
+				else:
+					exit(0)
 			else:
 				print('Snapshot found')
 				create_response = self.create_droplet_from_snapshot(latest_snapshot['id'])
@@ -155,7 +159,7 @@ class DigitalOcean:
 		this_response = self.client.droplets.create(body={
 			"name": self.TEMP_SERVER_NAME,
 			"region": self.REGION,
-			"size": "s-1vcpu-1gb",
+			"size": self.DROPLET_SIZE,
 			"image": snapshot_id,
 		})
 		return this_response
